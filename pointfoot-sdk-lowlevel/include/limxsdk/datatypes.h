@@ -1,0 +1,256 @@
+/**
+ * @file datatypes.h
+ *
+ * @brief This file contains the declarations of classes and structures related to robotics.
+ *
+ * © [2025] LimX Dynamics Technology Co., Ltd. All rights reserved.
+ */
+
+#ifndef _LIMX_SDK_DATATYPES_H_
+#define _LIMX_SDK_DATATYPES_H_
+
+#include <stdint.h>
+#include <vector>
+#include <memory>
+#include <string>
+
+namespace limxsdk
+{
+  /**
+   * @struct ImuData
+   *
+   * @brief Structure representing IMU (Inertial Measurement Unit) data of a robot based on sensor feedback.
+   *
+   * This structure encapsulates IMU data including accelerometer, gyroscope, and quaternion.
+   */
+  struct ImuData
+  {
+    ImuData()
+    {
+      for (int i = 0; i < 3; i++)
+      {
+        acc[i] = 0.0;
+      }
+      for (int i = 0; i < 3; i++)
+      {
+        gyro[i] = 0.0;
+      }
+      for (int i = 0; i < 4; i++)
+      {
+        quat[i] = 0.0;
+      }
+    }
+    uint64_t stamp; // Timestamp in nanoseconds, typically represents the time when this data was recorded or generated.
+    float acc[3];   // Array to store IMU accelerometer data for tracking linear acceleration along three axes (X, Y, Z).
+    float gyro[3];  // Array to store IMU gyroscope data for tracking angular velocity or rotational speed along three axes (X, Y, Z).
+    float quat[4];  // Array to store IMU quaternion data, representing orientation in 3D space (w, x, y, z).
+  };
+  typedef std::shared_ptr<ImuData> ImuDataPtr;
+  typedef std::shared_ptr<ImuData const> ImuDataConstPtr;
+
+  /**
+   * @struct RobotState
+   *
+   * @brief Structure representing the state of a robot based on sensor feedback.
+   *
+   * This structure encapsulates various data points that could be used to monitor and control a robot, including output torque, current angles, and velocities.
+   */
+  struct RobotState
+  {
+    RobotState() {}
+    RobotState(int motor_num)
+        : tau(motor_num, 0.0), q(motor_num, 0.0), dq(motor_num, 0.0), motor_names(motor_num, "") {}
+
+    void resize(int motor_num)
+    {
+      tau.resize(motor_num, 0.0);
+      q.resize(motor_num, 0.0);
+      dq.resize(motor_num, 0.0);
+      motor_names.resize(motor_num, "");
+    }
+
+    uint64_t stamp;                       // Timestamp in nanoseconds, typically represents the time when this data was recorded or generated.
+    std::vector<float> tau;               // Vector to store the current estimated output torque (in Newton meters)
+    std::vector<float> q;                 // Vector to store the current angles (in radians)
+    std::vector<float> dq;                // Vector to store the current velocities (in radians per second)
+    std::vector<std::string> motor_names; // Vector storing the names of the motors
+  };
+  typedef std::shared_ptr<RobotState> RobotStatePtr;
+  typedef std::shared_ptr<RobotState const> RobotStateConstPtr;
+
+  /**
+   * @struct RobotCmd
+   *
+   * @brief Structure representing the command for controlling a robot.
+   *
+   * This structure holds various commands that can be used to control a robot, including the desired working mode, desired angles, desired velocities, desired output torque, desired position stiffness, and desired velocity stiffness.
+   */
+  struct RobotCmd
+  {
+    RobotCmd() {}
+    RobotCmd(int motor_num)
+        : mode(motor_num, 0)
+        , q(motor_num, 0.0)
+        , dq(motor_num, 0.0)
+        , tau(motor_num, 0.0)
+        , Kp(motor_num, 0.0)
+        , Kd(motor_num, 0.0)
+        , motor_names(motor_num, "")
+        , parallel_solve_required(motor_num, true) {}
+
+    void resize(int motor_num)
+    {
+      mode.resize(motor_num, 0);
+      q.resize(motor_num, 0.0);
+      dq.resize(motor_num, 0.0);
+      tau.resize(motor_num, 0.0);
+      Kp.resize(motor_num, 0.0);
+      Kd.resize(motor_num, 0.0);
+      motor_names.resize(motor_num, "");
+      parallel_solve_required.resize(motor_num, true);
+    }
+
+    uint64_t stamp;                       // Timestamp in nanoseconds, typically represents the time when this data was recorded or generated.
+    std::vector<uint8_t> mode;            // The desired working mode of each motor. The control modes are defined as follows:
+                                          //   0: Torque-position hybrid control mode
+                                          //   1: Velocity control mode
+                                          //   2: Position control mode
+                                          //   3: Torque control mode
+    std::vector<float> q;                 // Vector storing the desired angles (in radians).
+    std::vector<float> dq;                // Vector storing the desired velocities (in radians per second).
+    std::vector<float> tau;               // Vector storing the desired output torque (in Newton meters).
+    std::vector<float> Kp;                // Vector storing the desired position stiffness (in Newton meters per radian).
+    std::vector<float> Kd;                // Vector storing the desired velocity stiffness (in Newton meters per radian per second).
+    std::vector<std::string> motor_names; // Vector storing the names of the motors
+    std::vector<bool> parallel_solve_required; // Flag indicating whether parallel solving is required for each motor
+  };
+  typedef std::shared_ptr<RobotCmd> RobotCmdPtr;
+  typedef std::shared_ptr<RobotCmd const> RobotCmdConstPtr;
+
+  /**
+   * @struct SensorJoy
+   *
+   * @brief Structure representing sensor inputs from robot joystick.
+   *
+   * This structure contains timestamp information along with axis and button values obtained from a joystick sensor.
+   */
+  struct SensorJoy
+  {
+    uint64_t stamp;               // Timestamp in nanoseconds, associated with the sensor input.
+    std::vector<float> axes;      // Values representing the positions of the joystick axes.
+    std::vector<int32_t> buttons; // Values representing the state of joystick buttons.
+  };
+  typedef std::shared_ptr<SensorJoy> SensorJoyPtr;
+  typedef std::shared_ptr<SensorJoy const> SensorJoyConstPtr;
+
+  /**
+   * @struct DiagnosticValue
+   *
+   * @brief Structure representing diagnostic values.
+   *
+   * This structure contains information about the diagnostic level, name, code, and message.
+   */
+  struct DiagnosticValue
+  {
+#if defined(_WIN32) && defined(OK)
+#undef OK
+#endif
+#if defined(_WIN32) && defined(WARN)
+#undef WARN
+#endif
+#if defined(_WIN32) && defined(ERROR)
+#undef ERROR
+#endif
+    enum { OK = 0 };
+    enum { WARN = 1 };
+    enum { ERROR = 2 };
+
+    uint64_t stamp;      // Timestamp in nanoseconds.
+    int32_t level;       // Level associated with the diagnostic value.
+    std::string name;    // Name identifying the diagnostic value.
+    int32_t code;        // Code corresponding to the diagnostic value.
+    std::string message; // Detailed message related to the diagnostic value.
+  };
+  typedef std::shared_ptr<DiagnosticValue> DiagnosticValuePtr;
+  typedef std::shared_ptr<DiagnosticValue const> DiagnosticValueConstPtr;
+
+  /**
+   * @struct GripperCmd
+   *
+   * @brief Structure representing a command to drive a multi-finger gripper.
+   *
+   * Each vector is indexed per finger. For Tron2 the layout is [left, right] (size=2).
+   * Values are normalized percentages in the range [0, 100]:
+   *   - opening : commanded opening (0 = fully closed, 100 = fully open)
+   *   - speed   : commanded motion speed
+   *   - force   : commanded grasping force
+   *
+   * The interface is intentionally generic (variable-length vectors) so that 2F / 3F / 5F
+   * grippers can share the same data structure.
+   */
+  struct GripperCmd
+  {
+    GripperCmd() {}
+    explicit GripperCmd(int finger_num)
+        : opening(finger_num, 0.0f), speed(finger_num, 0.0f), force(finger_num, 0.0f) {}
+
+    void resize(int finger_num)
+    {
+      opening.resize(finger_num, 0.0f);
+      speed.resize(finger_num, 0.0f);
+      force.resize(finger_num, 0.0f);
+    }
+
+    uint64_t stamp{0};            // Timestamp in nanoseconds.
+    std::vector<float> opening;   // Commanded opening per finger, in [0, 100] (%).
+    std::vector<float> speed;     // Commanded motion speed per finger, in [0, 100] (%).
+    std::vector<float> force;     // Commanded grasping force per finger, in [0, 100] (%).
+  };
+  typedef std::shared_ptr<GripperCmd> GripperCmdPtr;
+  typedef std::shared_ptr<GripperCmd const> GripperCmdConstPtr;
+
+  /**
+   * @struct GripperState
+   *
+   * @brief Structure representing the feedback state of a multi-finger gripper.
+   *
+   * Index layout follows the command (e.g. Tron2: [left, right]).
+   */
+  struct GripperState
+  {
+    GripperState() {}
+    explicit GripperState(int finger_num)
+        : q(finger_num, 0.0f), v(finger_num, 0.0f), vd(finger_num, 0.0f), tau(finger_num, 0.0f) {}
+
+    uint64_t stamp{0};        // Timestamp in nanoseconds.
+    std::vector<float> q;     // Current opening feedback per finger (%).
+    std::vector<float> v;     // Current motion speed feedback per finger.
+    std::vector<float> vd;    // Desired/raw velocity feedback (controller-defined).
+    std::vector<float> tau;   // Current force/torque feedback per finger.
+  };
+  typedef std::shared_ptr<GripperState> GripperStatePtr;
+  typedef std::shared_ptr<GripperState const> GripperStateConstPtr;
+
+  /**
+   * @struct TerrainData
+   *
+   * @brief Structure representing terrain data collected by the robot's sensors.
+   *
+   * This structure contains timestamp information along with serialized terrain-related data 
+   * (e.g., elevation values, slope parameters, or terrain point cloud coordinates) 
+   * in a double-precision vector format.
+   */
+  struct TerrainData
+  {
+    uint64_t stamp{0};               // Timestamp in nanoseconds
+    uint32_t height{0};              // Vertical dimension (rows) of the terrain data grid (in pixels/points)
+    uint32_t width{0};               // Horizontal dimension (columns) of the terrain data grid (in pixels/points)
+    uint32_t step{1};                // Number of bytes/elements between consecutive rows in the data vector (stride)
+    std::vector<double> data;        // Serialized terrain data (e.g., elevation values, slope angles, 3D XYZ coordinates)
+                                     // Data layout: row-major (row-by-row) order matching height/width dimensions
+  };
+  typedef std::shared_ptr<TerrainData> TerrainDataPtr;
+  typedef std::shared_ptr<TerrainData const> TerrainDataConstPtr;
+}
+
+#endif
