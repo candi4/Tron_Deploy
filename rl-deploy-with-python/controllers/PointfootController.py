@@ -202,6 +202,7 @@ class PointfootController:
         self.last_actions = np.zeros(self.actions_size)
         self.commands = np.zeros(self.commands_size)  # command to the robot (e.g., velocity, rotation)
         self.scaled_commands = np.zeros(self.commands_size)
+        self.gait_vector = np.full(7, 0.1, dtype=np.float32)
         self.base_lin_vel = np.zeros(3)  # base linear velocity
         self.base_position = np.zeros(3)  # robot base position
         self.loop_count = 0  # loop iteration count
@@ -374,8 +375,8 @@ class PointfootController:
             joint_pos_input,  # Scaled joint positions
             joint_velocities * self.obs_scales['dof_vel'],  # Scaled joint velocities
             actions,  # Last actions taken by the robot
-            gait_clock,  # A clock signal related to the robot's gait
-            gait  # Information about the current gait pattern of the robot
+            #gait_clock,  # A clock signal related to the robot's gait
+            #gait  # Information about the current gait pattern of the robot
         ])
         print("Debug1",obs)
         num_prop = 30  # 👈 chỉnh đúng số proprio lúc bạn huấn luyện depth encoder
@@ -421,8 +422,13 @@ class PointfootController:
         """
         Computes the actions based on the current observations using the policy session.
         """
-        # Concatenate observations into a single tensor and convert to float32
-        input_tensor = np.concatenate([self.encoder_out, self.observations, self.scaled_commands], axis=0)
+        # Policy input order: obs_t, command_t, z_student, gait_student.
+        input_tensor = np.concatenate([
+            self.observations,
+            self.scaled_commands,
+            self.encoder_out,
+            self.gait_vector,
+        ], axis=0)
         input_tensor = input_tensor.astype(np.float32)
         
         # Create a dictionary of inputs for the policy session

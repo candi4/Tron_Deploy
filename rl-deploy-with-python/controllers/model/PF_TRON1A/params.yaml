@@ -39,7 +39,7 @@ PointfootCfg:
 
   size:
     actions_size: 6
-    observations_size: 30
+    observations_size: 24
     commands_size: 3
     obs_history_length: 10
     encoder_output_size: 3
